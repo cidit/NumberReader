@@ -2,6 +2,6 @@ venv/
 
 .idea/
 
-preview.png
+*preview.png
 
 __pycache__/

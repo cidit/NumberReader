@@ -8,6 +8,7 @@ from net import setup_mnist_net
 FRAME_RATE = 10  # target fps
 CAM_ID = 0  # 1
 MNIST_NET = setup_mnist_net("network_weights\\mnist.pth")
+PADDING = 20
 
 
 def timeit(it: callable):
@@ -15,6 +16,23 @@ def timeit(it: callable):
     retval = it()
     timer_end = time.time()
     return timer_end - timer_start, retval
+
+
+def process_image(image):
+    grayscale = cv.cvtColor(image, cv.COLOR_BGR2GRAY)
+    _, threshed = cv.threshold(grayscale, 100, 255, cv.THRESH_OTSU | cv.THRESH_BINARY_INV)
+    return threshed
+
+
+def extract_box_from_image(image, bounding_box):
+    (x1, y1), (x2, y2) = bounding_box
+    crop = image[y1:y2, x1:x2]
+    return crop
+
+
+def prepare_image_for_mnist_network(image):
+    resized = cv.resize(image, (24, 24))
+    return cv.copyMakeBorder(resized, 2, 2, 2, 2, cv.BORDER_CONSTANT, value=0)
 
 
 class App:
@@ -64,7 +82,32 @@ class App:
             print("failed to capture")
 
     def handle_capture(self, frame):
-        cv.imshow(self.name, frame)
+        display_frame = frame.copy()
+        frame_height, frame_width = frame.shape[:2]
+
+        processed = process_image(frame)
+        contours = cv.findContours(processed, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)[-2]
+
+        for contour in contours:
+            x, y, w, h = cv.boundingRect(contour)  # bounding box
+            # make sure the box is big enough to be significant and that its not the box of the whole image
+            if h >= 0.3 * frame_height and h != frame_height:
+                p1, p2 = box = (x, y), (x + w, y + h)
+                cropped = extract_box_from_image(processed, box)
+                prepared = prepare_image_for_mnist_network(cropped)
+                prediction = MNIST_NET.run(prepared)
+                cv.rectangle(display_frame, p1, p2, color=(0, 255, 0), thickness=2)
+                cv.putText(display_frame,
+                           text=str(prediction[0][0].item()),
+                           org=p1,
+                           fontFace=cv.FONT_HERSHEY_PLAIN,
+                           fontScale=8,
+                           color=(0, 255, 0),
+                           thickness=2)
+                cv.imshow("preview", prepared)
+                cv.imwrite("pure_cv_preview.png", prepared)
+
+        cv.imshow(self.name, display_frame)
 
     def handle_shortcut_event(self, shortcut):
         if shortcut in self.shortcuts.keys():

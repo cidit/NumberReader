@@ -40,7 +40,7 @@ def east_forward_pass(cv_image):
 def mnist_forward_pass(image, box):
     p1, p2 = box
     extracted = extract_box_from_image(image, (p1, p2))
-    transformed = transform_image_for_mnist_network(extracted)
+    transformed = prepare_image_for_mnist_network(extracted)
     return MNIST_NET.run(transformed)
 
 
@@ -108,7 +108,7 @@ def extract_box_from_image(image, bounding_box):
     return crop
 
 
-def transform_image_for_mnist_network(image):
+def prepare_image_for_mnist_network(image):
     grayscale = cv.cvtColor(image, cv.COLOR_BGR2GRAY)
     resized = cv.resize(grayscale, (28, 28))
     adjusted = adjust_brightness_and_contrast(resized)
@@ -184,7 +184,13 @@ class App:
             cv.rectangle(display_frame, p1, p2, (0, 255, 0), 2)
             dt, prediction = timeit(lambda: mnist_forward_pass(frame, box))
             print("MNIST net forward calculation time:  {:.2f} seconds".format(dt))
-            print(prediction[0][0])
+            cv.putText(display_frame,
+                       text=str(prediction[0][0].item()),
+                       org=p1,
+                       fontFace=cv.FONT_HERSHEY_PLAIN,
+                       fontScale=8,
+                       color=(0, 255, 0),
+                       thickness=2)
 
         self.show_preview(frame, padded_boxes)
 
@@ -195,9 +201,9 @@ class App:
         if len(padded_boxes) > 0:
             extracted = extract_box_from_image(image=frame,
                                                bounding_box=padded_boxes[0])
-            transformed = transform_image_for_mnist_network(extracted)
+            transformed = prepare_image_for_mnist_network(extracted)
             cv.imshow("preview", transformed)
-            cv.imwrite("preview.png", transformed)
+            cv.imwrite("east_preview.png", transformed)
 
     def handle_shortcut_event(self, shortcut):
         if shortcut in self.shortcuts.keys():
