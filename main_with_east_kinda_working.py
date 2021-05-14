@@ -22,7 +22,7 @@ def timeit(it: callable):
     return timer_end - timer_start, retval
 
 
-def forward_pass(cv_image):
+def east_forward_pass(cv_image):
     magic_mean_from_tutorial = (123.68, 116.78, 103.94)
     (img_height, img_width, _) = cv_image.shape
     blob = cv.dnn.blobFromImage(cv_image,
@@ -167,7 +167,7 @@ class App:
             print("failed to capture")
 
     def handle_capture(self, frame):
-        delta_time, (confidence_scores, geometry) = timeit(lambda: forward_pass(frame))
+        delta_time, (confidence_scores, geometry) = timeit(lambda: east_forward_pass(frame))
         raw_boxes = interpret_bounding_boxes(confidence_scores, geometry)
         padded_boxes = pad_boxes(raw_boxes)
         display_frame = frame.copy()

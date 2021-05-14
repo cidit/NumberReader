@@ -4,3 +4,4 @@ venv/
 
 preview.png
 
+__pycache__/
