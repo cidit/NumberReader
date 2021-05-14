@@ -37,6 +37,13 @@ def east_forward_pass(cv_image):
     return scores, geometries
 
 
+def mnist_forward_pass(image, box):
+    p1, p2 = box
+    extracted = extract_box_from_image(image, (p1, p2))
+    transformed = transform_image_for_mnist_network(extracted)
+    return MNIST_NET.run(transformed)
+
+
 def interpret_bounding_boxes(scores, geometry):
     # stole this from a tutorial : https://www.pyimagesearch.com/2018/08/20/opencv-text-detection-east-text-detector/
     rows, columns = scores.shape[2:4]
@@ -172,11 +179,10 @@ class App:
         padded_boxes = pad_boxes(raw_boxes)
         display_frame = frame.copy()
 
-        for (p1, p2) in padded_boxes:
+        for box in padded_boxes:
+            p1, p2 = box
             cv.rectangle(display_frame, p1, p2, (0, 255, 0), 2)
-            extracted = extract_box_from_image(frame, (p1, p2))
-            transformed = transform_image_for_mnist_network(extracted)
-            dt, prediction = timeit(lambda: MNIST_NET.run(transformed))
+            dt, prediction = timeit(lambda: mnist_forward_pass(frame, box))
             print("MNIST net forward calculation time:  {:.2f} seconds".format(dt))
             print(prediction[0][0])
 
