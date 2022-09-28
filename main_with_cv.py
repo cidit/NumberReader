@@ -6,7 +6,7 @@ import time
 from net import setup_mnist_net
 
 FRAME_RATE = 10  # target fps
-CAM_ID = 0  # 1
+CAM_ID = 1  # 1 / 0
 MNIST_NET = setup_mnist_net("network_weights\\mnist.pth")
 PADDING = 20
 
@@ -104,10 +104,10 @@ class App:
                            fontScale=8,
                            color=(0, 255, 0),
                            thickness=2)
-                cv.imshow("preview", prepared)
+                cv.imshow("preview", cv.resize(prepared, (500, 500), cv.INTER_CUBIC))
                 cv.imwrite("pure_cv_preview.png", prepared)
 
-        cv.imshow(self.name, display_frame)
+        cv.imshow(self.name, display_frame) # display_frame / processed
 
     def handle_shortcut_event(self, shortcut):
         if shortcut in self.shortcuts.keys():
